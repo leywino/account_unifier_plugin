@@ -54,4 +54,16 @@ class AccountUnifierPlugin {
       return false;
     }
   }
+
+  /// Check if account unifier is installed on the device
+  static Future<bool> isPackageInstalled() async {
+    try {
+      final bool result = await _channel
+          .invokeMethod('isPackageInstalled');
+      return result;
+    } catch (e) {
+      print('Error checking installation of unifier: $e');
+      return false;
+    }
+  }
 }

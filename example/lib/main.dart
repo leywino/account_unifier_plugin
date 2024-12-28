@@ -107,6 +107,24 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
+  ///check if package is installed
+  Future<void> _isPackageInstalled() async {
+    final startTime = DateTime.now(); // Start time logging
+    print("Start checking package installation: $startTime");
+
+    final bool isInstalled = await AccountUnifierPlugin.isPackageInstalled();
+
+    final endTime = DateTime.now(); // End time logging
+    print("Finished checking package installation: $endTime");
+
+    final duration = endTime.difference(startTime).inMilliseconds;
+    print("Time taken to check package installation: ${duration}ms");
+
+    setState(() {
+      _status = "Unifier installed = $isInstalled";
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -140,6 +158,10 @@ class _MyAppState extends State<MyApp> {
               ElevatedButton(
                 onPressed: _updateAccessToken,
                 child: const Text("Update Access Token"),
+              ),
+              ElevatedButton(
+                onPressed: _isPackageInstalled,
+                child: const Text("isPackageInstalled"),
               ),
               const SizedBox(height: 20),
               if (_accounts.isNotEmpty) ...[
