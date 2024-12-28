@@ -32,7 +32,7 @@ class AccountUnifierPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
 
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
         when (call.method) {
-            "getAccounts" -> handleGetAccounts(result)
+            "getAccount" -> handleGetAccounts(result)
             "addAccount" -> handleAddAccount(call, result)
             "getEmail" -> handleGetEmail(result)
             "updateAccessToken" -> handleUpdateAccessToken(call, result)
@@ -144,7 +144,7 @@ class AccountUnifierPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
 
     private fun handleGetAccounts(result: MethodChannel.Result) {
         Log.d(TAG, "Fetching accounts")
-        val accounts = getAccounts()
+        val accounts = getAccount()
         Log.d(TAG, "Accounts fetched: $accounts")
         result.success(accounts)
     }
@@ -197,19 +197,17 @@ class AccountUnifierPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
         }
     }
 
-    private fun getAccounts(): List<Map<String, String>> {
+    private fun getAccount(): Map<String, String>? {
         val uri = Uri.parse(PROVIDER_URI)
-        val accounts = mutableListOf<Map<String, String>>()
-
-        Log.d(TAG, "Querying ContentProvider at $uri")
+        Log.d(TAG, "Querying ContentProvider at $uri for a single account")
         val cursor: Cursor? = try {
             context.contentResolver.query(uri, null, null, null, null)
         } catch (e: SecurityException) {
             Log.e(TAG, "SecurityException while querying ContentProvider: ${e.message}")
-            return accounts
+            return null
         } catch (e: Exception) {
             Log.e(TAG, "Exception while querying ContentProvider: ${e.message}")
-            return accounts
+            return null
         }
 
         cursor?.use {
@@ -217,17 +215,16 @@ class AccountUnifierPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
                 val accountName = it.getString(it.getColumnIndexOrThrow(COLUMN_ACCOUNT_NAME))
                 val authToken = it.getString(it.getColumnIndexOrThrow(COLUMN_AUTH_TOKEN))
                 val refreshToken = it.getString(it.getColumnIndexOrThrow(COLUMN_REFRESH_TOKEN))
-                accounts.add(
-                    mapOf(
-                        "accountName" to accountName,
-                        "authToken" to authToken,
-                        "refreshToken" to refreshToken
-                    )
+                Log.d(TAG, "Account fetched: accountName=$accountName, authToken=$authToken")
+                return mapOf(
+                    "accountName" to accountName,
+                    "authToken" to authToken,
+                    "refreshToken" to refreshToken
                 )
             }
-        } ?: Log.w(TAG, "Cursor is null, no accounts found")
-
-        return accounts
+        }
+        Log.w(TAG, "Cursor is null or no account found")
+        return null
     }
 
     private fun addAccount(username: String, authToken: String, refreshToken: String): Boolean {
@@ -258,12 +255,8 @@ class AccountUnifierPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
     }
 
     private fun getEmail(): String? {
-        val accounts = getAccounts()
-        return if (accounts.isNotEmpty()) {
-            accounts[0]["accountName"]
-        } else {
-            null
-        }
+        val account = getAccount()
+        return account?.get("accountName")
     }
 
     private fun updateAccessToken(authToken: String): Boolean {

@@ -18,7 +18,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   String _status = "No operation performed yet.";
-  List<Map<String, String>> _accounts = [];
+  Map<String, String>? _account = {};
   String? _email;
   String? _jsonText;
 
@@ -76,9 +76,9 @@ class _MyAppState extends State<MyApp> {
     });
 
     try {
-      final accounts = await AccountUnifierPlugin.getAccounts();
+      final accounts = await AccountUnifierPlugin.getAccount();
       setState(() {
-        _accounts = accounts;
+        _account = accounts;
         _status = "Accounts fetched successfully!";
       });
     } catch (e) {
@@ -97,7 +97,7 @@ class _MyAppState extends State<MyApp> {
     try {
       final success = await AccountUnifierPlugin.addAccount(
         "user@example.com",
-        "authToken123",
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzM2NjY4ODMxLCJpYXQiOjE3MzUzNzI4MzEsImp0aSI6IjVlY2U3MmViMTk2MDQ1MzZiOGQxY2Y1MmMzOTZhMjU0IiwidXNlcl9pZCI6OSwidXNlcl90eXBlIjoic3R1ZGVudCIsImlkIjo5fQ.GUGX_JJzYnbP6yETQLBuScbwIWGSrjisHrGo-wxYKeA",
         "refreshToken123",
       );
       setState(() {
@@ -196,15 +196,13 @@ class _MyAppState extends State<MyApp> {
                   child: const Text("Insert JSON Text"),
                 ),
                 const SizedBox(height: 20),
-                if (_accounts.isNotEmpty) ...[
+                if (_account != null) ...[
                   const Text(
                     "Accounts:",
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
-                  ..._accounts.map(
-                    (account) => Text(
-                      "Email: ${account["accountName"]}, Token: ${account["authToken"]}, Refresh: ${account["refreshToken"]}",
-                    ),
+                  Text(
+                    "Email: ${_account!["accountName"]}, Token: ${_account!["authToken"]}, Refresh: ${_account!["refreshToken"]}",
                   ),
                 ],
                 if (_email != null) ...[
