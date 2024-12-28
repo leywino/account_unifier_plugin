@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'dart:async';
 
@@ -18,10 +20,53 @@ class _MyAppState extends State<MyApp> {
   String _status = "No operation performed yet.";
   List<Map<String, String>> _accounts = [];
   String? _email;
+  String? _jsonText;
 
   @override
   void initState() {
     super.initState();
+  }
+
+  /// Fetch JSON text
+  Future<void> _fetchJsonText() async {
+    setState(() {
+      _status = "Fetching JSON text...";
+    });
+
+    try {
+      final jsonText = await AccountUnifierPlugin.getJsonText();
+      setState(() {
+        _jsonText = jsonText;
+        _status =
+            jsonText != null ? "JSON fetched successfully!" : "No JSON found.";
+      });
+    } catch (e) {
+      setState(() {
+        _status = "Error fetching JSON: $e";
+      });
+    }
+  }
+
+  /// Insert or update JSON text
+  Future<void> _insertJsonText() async {
+    setState(() {
+      _status = "Inserting JSON text...";
+    });
+
+    const newJsonText = {"id": 1, "gender": "male"};
+
+    try {
+      final success =
+          await AccountUnifierPlugin.insertJsonText(jsonEncode(newJsonText));
+      setState(() {
+        _status =
+            success ? "JSON inserted successfully!" : "Failed to insert JSON.";
+      });
+    } catch (e) {
+      setState(() {
+        _status = "Error inserting JSON: $e";
+      });
+    }
   }
 
   /// Fetch accounts and update the UI
@@ -107,24 +152,6 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  ///check if package is installed
-  Future<void> _isPackageInstalled() async {
-    final startTime = DateTime.now(); // Start time logging
-    print("Start checking package installation: $startTime");
-
-    final bool isInstalled = await AccountUnifierPlugin.isPackageInstalled();
-
-    final endTime = DateTime.now(); // End time logging
-    print("Finished checking package installation: $endTime");
-
-    final duration = endTime.difference(startTime).inMilliseconds;
-    print("Time taken to check package installation: ${duration}ms");
-
-    setState(() {
-      _status = "Unifier installed = $isInstalled";
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -134,55 +161,68 @@ class _MyAppState extends State<MyApp> {
         ),
         body: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              Text(
-                "Status: $_status",
-                style:
-                    const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _fetchAccounts,
-                child: const Text("Fetch Accounts"),
-              ),
-              ElevatedButton(
-                onPressed: _addAccount,
-                child: const Text("Add Account"),
-              ),
-              ElevatedButton(
-                onPressed: _fetchEmail,
-                child: const Text("Fetch Email"),
-              ),
-              ElevatedButton(
-                onPressed: _updateAccessToken,
-                child: const Text("Update Access Token"),
-              ),
-              ElevatedButton(
-                onPressed: _isPackageInstalled,
-                child: const Text("isPackageInstalled"),
-              ),
-              const SizedBox(height: 20),
-              if (_accounts.isNotEmpty) ...[
-                const Text(
-                  "Accounts:",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                ..._accounts.map(
-                  (account) => Text(
-                    "Email: ${account["accountName"]}, Token: ${account["authToken"]}, Refresh: ${account["refreshToken"]}",
-                  ),
-                ),
-              ],
-              if (_email != null) ...[
-                const SizedBox(height: 20),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
                 Text(
-                  "Email: $_email",
-                  style: const TextStyle(fontSize: 18),
+                  "Status: $_status",
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.bold),
                 ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: _fetchAccounts,
+                  child: const Text("Fetch Accounts"),
+                ),
+                ElevatedButton(
+                  onPressed: _addAccount,
+                  child: const Text("Add Account"),
+                ),
+                ElevatedButton(
+                  onPressed: _fetchEmail,
+                  child: const Text("Fetch Email"),
+                ),
+                ElevatedButton(
+                  onPressed: _updateAccessToken,
+                  child: const Text("Update Access Token"),
+                ),
+                ElevatedButton(
+                  onPressed: _fetchJsonText,
+                  child: const Text("Fetch JSON Text"),
+                ),
+                ElevatedButton(
+                  onPressed: _insertJsonText,
+                  child: const Text("Insert JSON Text"),
+                ),
+                const SizedBox(height: 20),
+                if (_accounts.isNotEmpty) ...[
+                  const Text(
+                    "Accounts:",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  ..._accounts.map(
+                    (account) => Text(
+                      "Email: ${account["accountName"]}, Token: ${account["authToken"]}, Refresh: ${account["refreshToken"]}",
+                    ),
+                  ),
+                ],
+                if (_email != null) ...[
+                  const SizedBox(height: 20),
+                  Text(
+                    "Email: $_email",
+                    style: const TextStyle(fontSize: 18),
+                  ),
+                ],
+                if (_jsonText != null) ...[
+                  const SizedBox(height: 20),
+                  Text(
+                    "JSON: $_jsonText",
+                    style: const TextStyle(fontSize: 18),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),

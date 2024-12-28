@@ -20,6 +20,7 @@ class AccountUnifierPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
         private const val COLUMN_ACCOUNT_NAME = "accountName"
         private const val COLUMN_AUTH_TOKEN = "authToken"
         private const val COLUMN_REFRESH_TOKEN = "refreshToken"
+        private const val COLUMN_JSON_DATA = "jsonData"
     }
 
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
@@ -36,10 +37,95 @@ class AccountUnifierPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
             "getEmail" -> handleGetEmail(result)
             "updateAccessToken" -> handleUpdateAccessToken(call, result)
             "isPackageInstalled" -> isPackageInstalled(result)
+            "getJsonText" -> handleGetJsonText(result)
+            "insertJsonText" -> handleInsertJsonText(call, result)
             else -> {
                 Log.w(TAG, "Method not implemented: ${call.method}")
                 result.notImplemented()
             }
+        }
+    }
+
+    private fun handleGetJsonText(result: MethodChannel.Result) {
+        Log.d(TAG, "Fetching JSON text")
+        val jsonText = getJsonText()
+        if (jsonText != null) {
+            Log.d(TAG, "JSON text fetched: $jsonText")
+            result.success(jsonText)
+        } else {
+            Log.w(TAG, "No JSON text found")
+            result.success(null)
+        }
+    }
+
+    private fun handleInsertJsonText(call: MethodCall, result: MethodChannel.Result) {
+        val jsonText = call.argument<String>("jsonText")
+
+        if (jsonText != null) {
+            Log.d(TAG, "Inserting JSON text: $jsonText")
+            val success = insertJsonText(jsonText)
+            Log.d(TAG, "Insert JSON text result: $success")
+            result.success(success)
+        } else {
+            Log.e(TAG, "Invalid arguments: jsonText is null")
+            result.error("INVALID_ARGUMENTS", "jsonText is missing", null)
+        }
+    }
+
+    private fun getJsonText(): String? {
+        val uri = Uri.parse(PROVIDER_URI)
+        var jsonText: String? = null
+
+        Log.d(TAG, "Querying ContentProvider for JSON text at $uri")
+        val cursor: Cursor? = try {
+            context.contentResolver.query(uri, arrayOf(COLUMN_JSON_DATA), null, null, null)
+        } catch (e: SecurityException) {
+            Log.e(TAG, "SecurityException while querying ContentProvider: ${e.message}")
+            return null
+        } catch (e: Exception) {
+            Log.e(TAG, "Exception while querying ContentProvider: ${e.message}")
+            return null
+        }
+
+        cursor?.use {
+            if (it.moveToFirst()) {
+                jsonText = it.getString(it.getColumnIndexOrThrow(COLUMN_JSON_DATA))
+            }
+        } ?: Log.w(TAG, "Cursor is null, no JSON text found")
+
+        return jsonText
+    }
+
+    private fun insertJsonText(jsonText: String): Boolean {
+        val uri = Uri.parse(PROVIDER_URI)
+
+        Log.d(TAG, "Inserting or replacing JSON text at $uri")
+        return try {
+            val values = ContentValues().apply {
+                put(COLUMN_JSON_DATA, jsonText)
+            }
+
+            val rowsUpdated = context.contentResolver.update(uri, values, null, null)
+            if (rowsUpdated > 0) {
+                Log.d(TAG, "JSON text updated successfully")
+                true
+            } else {
+                Log.d(TAG, "No rows updated, attempting insert")
+                val resultUri = context.contentResolver.insert(uri, values)
+                if (resultUri != null) {
+                    Log.d(TAG, "JSON text inserted successfully: $resultUri")
+                    true
+                } else {
+                    Log.e(TAG, "Failed to insert JSON text. Insert returned null.")
+                    false
+                }
+            }
+        } catch (e: SecurityException) {
+            Log.e(TAG, "SecurityException while inserting/updating JSON text: ${e.message}")
+            false
+        } catch (e: Exception) {
+            Log.e(TAG, "Exception while inserting/updating JSON text: ${e.message}")
+            false
         }
     }
 

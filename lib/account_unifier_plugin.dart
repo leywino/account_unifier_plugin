@@ -58,11 +58,33 @@ class AccountUnifierPlugin {
   /// Check if account unifier is installed on the device
   static Future<bool> isPackageInstalled() async {
     try {
-      final bool result = await _channel
-          .invokeMethod('isPackageInstalled');
+      final bool result = await _channel.invokeMethod('isPackageInstalled');
       return result;
     } catch (e) {
       print('Error checking installation of unifier: $e');
+      return false;
+    }
+  }
+
+  /// Fetch the JSON text stored in the account
+  static Future<String?> getJsonText() async {
+    try {
+      final String jsonText = await _channel.invokeMethod('getJsonText');
+      return jsonText;
+    } catch (e) {
+      print('Error fetching JSON text: $e');
+      return null;
+    }
+  }
+
+  /// Insert or replace JSON text in the account
+  static Future<bool> insertJsonText(String jsonText) async {
+    try {
+      final bool result =
+          await _channel.invokeMethod('insertJsonText', {'jsonText': jsonText});
+      return result;
+    } catch (e) {
+      print('Error inserting JSON text: $e');
       return false;
     }
   }
