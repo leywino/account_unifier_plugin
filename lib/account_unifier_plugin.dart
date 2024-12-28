@@ -4,11 +4,17 @@ class AccountUnifierPlugin {
   static const MethodChannel _channel = MethodChannel('account_unifier_plugin');
 
   /// Fetch all accounts
+  /// Fetch the account
   static Future<Map<String, String>?> getAccount() async {
     try {
-      final Map<String, dynamic>? account =
-          await _channel.invokeMethod('getAccount');
-      return account?.map((key, value) => MapEntry(key, value as String));
+      final account =
+          await _channel.invokeMethod<Map<dynamic, dynamic>>('getAccount');
+      if (account == null) {
+        return null;
+      }
+      return account.map(
+        (key, value) => MapEntry(key.toString(), value.toString()),
+      );
     } catch (e) {
       print('Error fetching account: $e');
       return null;
