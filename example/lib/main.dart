@@ -69,6 +69,10 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
+  Future<void> _refreshToken() async{
+
+  }
+
   /// Fetch accounts and update the UI
   Future<void> _fetchAccounts() async {
     setState(() {
@@ -138,7 +142,7 @@ class _MyAppState extends State<MyApp> {
 
     try {
       final success = await AccountUnifierPlugin.updateAccessToken(
-        "newAccessToken456",
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzM2NjY4ODMxLCJpYXQiOjE3MzUzNzI4MzEsImp0aSI6IjVlY2U3MmViMTk2MDQ1MzZiOGQxY2Y1MmMzOTZhMjU0IiwidXNlcl9pZCI6OSwidXNlcl90eXBlIjoic3R1ZGVudCIsImlkIjo5fQ.GUGX_JJzYnbP6yETQLBuScbwIWGSrjisHrGo-wxYKeA",
       );
       setState(() {
         _status = success
@@ -194,6 +198,10 @@ class _MyAppState extends State<MyApp> {
                 ElevatedButton(
                   onPressed: _insertJsonText,
                   child: const Text("Insert JSON Text"),
+                ),
+                 ElevatedButton(
+                  onPressed: _refreshToken,
+                  child: const Text("Refresh Token"),
                 ),
                 const SizedBox(height: 20),
                 if (_account != null) ...[

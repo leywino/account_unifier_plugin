@@ -1,10 +1,10 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/services.dart';
 
 class AccountUnifierPlugin {
   static const MethodChannel _channel = MethodChannel('account_unifier_plugin');
 
   /// Fetch all accounts
-  /// Fetch the account
   static Future<Map<String, String>?> getAccount() async {
     try {
       final account =
@@ -90,6 +90,73 @@ class AccountUnifierPlugin {
       return result;
     } catch (e) {
       print('Error inserting JSON text: $e');
+      return false;
+    }
+  }
+
+  /// Update the kBaseUrl in the account unifier
+  static Future<bool> updateBaseUrl(String kBaseUrl) async {
+    try {
+      final bool result =
+          await _channel.invokeMethod('updateBaseUrl', {'kBaseUrl': kBaseUrl});
+      return result;
+    } catch (e) {
+      print('Error updating kBaseUrl: $e');
+      return false;
+    }
+  }
+
+  /// Fetch the kBaseUrl from the account unifier
+  static Future<String?> getBaseUrl() async {
+    try {
+      final String? baseUrl = await _channel.invokeMethod('getBaseUrl');
+      return baseUrl;
+    } catch (e) {
+      print('Error fetching kBaseUrl: $e');
+      return null;
+    }
+  }
+
+  /// Refresh the access token using the refresh token
+  static Future<bool> refreshToken([String? kBaseUrl]) async {
+    const String defaultBaseUrl = "";
+    final String baseUrl = kBaseUrl ?? defaultBaseUrl;
+
+    try {
+      // Fetch the stored refresh token
+      final account = await getAccount();
+      final refreshToken = account?['refreshToken'];
+      if (refreshToken == null || refreshToken.isEmpty) {
+        print('Error: No refresh token found');
+        return false;
+      }
+
+      // Make API call to get a new access token
+      final dio = Dio();
+      final response = await dio.post(
+        '$baseUrl/api/refresh-token',
+        options: Options(headers: {'Content-Type': 'application/json'}),
+        data: {'refreshToken': refreshToken},
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = response.data;
+        final newAuthToken = responseData['authToken'];
+
+        if (newAuthToken == null || newAuthToken.isEmpty) {
+          print('Error: Invalid response from server');
+          return false;
+        }
+
+        // Update the access token in the account unifier
+        return await updateAccessToken(newAuthToken);
+      } else {
+        print(
+            'Error: Failed to refresh token. Status code: ${response.statusCode}');
+        return false;
+      }
+    } catch (e) {
+      print('Error refreshing token: $e');
       return false;
     }
   }

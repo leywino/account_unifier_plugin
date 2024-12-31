@@ -21,6 +21,7 @@ class AccountUnifierPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
         private const val COLUMN_AUTH_TOKEN = "authToken"
         private const val COLUMN_REFRESH_TOKEN = "refreshToken"
         private const val COLUMN_JSON_DATA = "jsonData"
+        private const val COLUMN_K_BASE_URL = "kBaseUrl"
     }
 
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
@@ -39,6 +40,8 @@ class AccountUnifierPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
             "isPackageInstalled" -> isPackageInstalled(result)
             "getJsonText" -> handleGetJsonText(result)
             "insertJsonText" -> handleInsertJsonText(call, result)
+            "updateBaseUrl" -> handleUpdateBaseUrl(call, result)
+            "getBaseUrl" -> handleGetBaseUrl(result)
             else -> {
                 Log.w(TAG, "Method not implemented: ${call.method}")
                 result.notImplemented()
@@ -138,6 +141,89 @@ class AccountUnifierPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
             result.success(false)
         } catch (e: Exception) {
             result.error("ERROR", "An unexpected error occurred: ${e.message}", null)
+        }
+    }
+
+    private fun handleGetBaseUrl(result: MethodChannel.Result) {
+        Log.d(TAG, "Fetching kBaseUrl")
+        val baseUrl = getBaseUrl()
+        if (baseUrl != null) {
+            Log.d(TAG, "kBaseUrl fetched: $baseUrl")
+            result.success(baseUrl)
+        } else {
+            Log.w(TAG, "No kBaseUrl found")
+            result.success(null)
+        }
+    }
+
+    private fun handleUpdateBaseUrl(call: MethodCall, result: MethodChannel.Result) {
+        val baseUrl = call.argument<String>("kBaseUrl")
+
+        if (baseUrl != null) {
+            Log.d(TAG, "Updating kBaseUrl: $baseUrl")
+            val success = updateBaseUrl(baseUrl)
+            Log.d(TAG, "Update kBaseUrl result: $success")
+            result.success(success)
+        } else {
+            Log.e(TAG, "Invalid arguments: kBaseUrl is null")
+            result.error("INVALID_ARGUMENTS", "kBaseUrl is missing", null)
+        }
+    }
+
+    private fun getBaseUrl(): String? {
+        val uri = Uri.parse(PROVIDER_URI)
+        var baseUrl: String? = null
+
+        Log.d(TAG, "Querying ContentProvider for kBaseUrl at $uri")
+        val cursor: Cursor? = try {
+            context.contentResolver.query(uri, arrayOf(COLUMN_K_BASE_URL), null, null, null)
+        } catch (e: SecurityException) {
+            Log.e(TAG, "SecurityException while querying ContentProvider: ${e.message}")
+            return null
+        } catch (e: Exception) {
+            Log.e(TAG, "Exception while querying ContentProvider: ${e.message}")
+            return null
+        }
+
+        cursor?.use {
+            if (it.moveToFirst()) {
+                baseUrl = it.getString(it.getColumnIndexOrThrow(COLUMN_K_BASE_URL))
+            }
+        } ?: Log.w(TAG, "Cursor is null, no kBaseUrl found")
+
+        return baseUrl
+    }
+
+    private fun updateBaseUrl(baseUrl: String): Boolean {
+        val uri = Uri.parse(PROVIDER_URI)
+
+        Log.d(TAG, "Updating or inserting kBaseUrl at $uri")
+        return try {
+            val values = ContentValues().apply {
+                put(COLUMN_K_BASE_URL, baseUrl)
+            }
+
+            val rowsUpdated = context.contentResolver.update(uri, values, null, null)
+            if (rowsUpdated > 0) {
+                Log.d(TAG, "kBaseUrl updated successfully")
+                true
+            } else {
+                Log.d(TAG, "No rows updated, attempting insert")
+                val resultUri = context.contentResolver.insert(uri, values)
+                if (resultUri != null) {
+                    Log.d(TAG, "kBaseUrl inserted successfully: $resultUri")
+                    true
+                } else {
+                    Log.e(TAG, "Failed to insert kBaseUrl. Insert returned null.")
+                    false
+                }
+            }
+        } catch (e: SecurityException) {
+            Log.e(TAG, "SecurityException while inserting/updating kBaseUrl: ${e.message}")
+            false
+        } catch (e: Exception) {
+            Log.e(TAG, "Exception while inserting/updating kBaseUrl: ${e.message}")
+            false
         }
     }
 
