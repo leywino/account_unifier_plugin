@@ -118,7 +118,7 @@ class AccountUnifierPlugin {
   }
 
   /// Refresh the access token using the refresh token
-  static Future<bool> refreshToken([String? kBaseUrl]) async {
+  static Future<String?> refreshToken([String? kBaseUrl]) async {
     const String defaultBaseUrl = "";
     final String baseUrl = kBaseUrl ?? defaultBaseUrl;
 
@@ -128,36 +128,36 @@ class AccountUnifierPlugin {
       final refreshToken = account?['refreshToken'];
       if (refreshToken == null || refreshToken.isEmpty) {
         print('Error: No refresh token found');
-        return false;
+        return null;
       }
 
       // Make API call to get a new access token
       final dio = Dio();
       final response = await dio.post(
-        '$baseUrl/api/refresh-token',
+        '$baseUrl/api/regenerate-token',
         options: Options(headers: {'Content-Type': 'application/json'}),
-        data: {'refreshToken': refreshToken},
+        data: {'refresh': refreshToken},
       );
 
       if (response.statusCode == 200) {
         final responseData = response.data;
-        final newAuthToken = responseData['authToken'];
+        final newAuthToken = responseData['access'];
 
         if (newAuthToken == null || newAuthToken.isEmpty) {
           print('Error: Invalid response from server');
-          return false;
+          return null;
         }
 
-        // Update the access token in the account unifier
-        return await updateAccessToken(newAuthToken);
+        await updateAccessToken(newAuthToken);
+        return newAuthToken;
       } else {
         print(
             'Error: Failed to refresh token. Status code: ${response.statusCode}');
-        return false;
+        return null;
       }
     } catch (e) {
       print('Error refreshing token: $e');
-      return false;
+      return null;
     }
   }
 }
