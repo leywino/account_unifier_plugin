@@ -106,6 +106,17 @@ class AccountUnifierPlugin {
     }
   }
 
+  /// Method to delete account on logout
+  static Future<bool> deleteAccount() async {
+    try {
+      final bool result = await _channel.invokeMethod('deleteAccount');
+      return result;
+    } catch (e) {
+      print('Error deleting account: $e');
+      return false;
+    }
+  }
+
   /// Fetch the kBaseUrl from the account unifier
   static Future<String?> getBaseUrl() async {
     try {

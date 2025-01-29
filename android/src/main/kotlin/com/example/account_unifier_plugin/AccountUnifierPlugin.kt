@@ -42,6 +42,7 @@ class AccountUnifierPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
             "insertJsonText" -> handleInsertJsonText(call, result)
             "updateBaseUrl" -> handleUpdateBaseUrl(call, result)
             "getBaseUrl" -> handleGetBaseUrl(result)
+            "deleteAccount" -> handleDeleteAccount(result)
             else -> {
                 Log.w(TAG, "Method not implemented: ${call.method}")
                 result.notImplemented()
@@ -312,6 +313,37 @@ class AccountUnifierPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
         Log.w(TAG, "Cursor is null or no account found")
         return null
     }
+
+    private fun handleDeleteAccount(result: MethodChannel.Result) {
+        Log.d(TAG, "Deleting the only existing account")
+        val success = deleteAccount()
+        Log.d(TAG, "Delete account result: $success")
+        result.success(success)
+    }
+
+
+    private fun deleteAccount(): Boolean {
+        val uri = Uri.parse(PROVIDER_URI)
+
+        Log.d(TAG, "Deleting the only existing account from ContentProvider at $uri")
+        return try {
+            val rowsDeleted = context.contentResolver.delete(uri, null, null) // Deletes all rows
+            if (rowsDeleted > 0) {
+                Log.d(TAG, "Account deleted successfully")
+                true
+            } else {
+                Log.e(TAG, "Failed to delete account. No rows deleted.")
+                false
+            }
+        } catch (e: SecurityException) {
+            Log.e(TAG, "SecurityException while deleting account: ${e.message}")
+            false
+        } catch (e: Exception) {
+            Log.e(TAG, "Exception while deleting account: ${e.message}")
+            false
+        }
+    }
+
 
     private fun addAccount(username: String, authToken: String, refreshToken: String): Boolean {
         val uri = Uri.parse(PROVIDER_URI)
